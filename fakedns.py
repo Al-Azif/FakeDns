@@ -292,7 +292,7 @@ class RuleEngine:
         try:
             s = socket.socket(type=socket.SOCK_DGRAM)
             s.settimeout(3.0)
-            addr = ('{}'.format('8.8.8.8'), 53)
+            addr = ('{}'.format('8.8.8.8'), PORT_DNS)
             s.sendto(query.data, addr)
             data = s.recv(1024)
             s.close()
@@ -333,16 +333,21 @@ def closer(message):
         print()
     sys.exit()
 
-
-def main(interface, rule_array, ignore, debug):
+def main(interface, rule_array, ignore, debug, port_dns):
     global rule_list
     global rules
     global TYPE
     global CASE
     global DEBUG
     global IGNORE
+    global PORT_DNS
 
     DEBUG = bool(debug)
+
+    if not (port_dns is None):
+        PORT_DNS = port_dns
+    else:
+        PORT_DNS = 53
 
     TYPE = {
         b'\x00\x01': 'A',
@@ -368,11 +373,11 @@ def main(interface, rule_array, ignore, debug):
     rule_list = rules.rule_list
 
     try:
-        server = ThreadedUDPServer((interface, 53), UDPHandler)
+        server = ThreadedUDPServer((interface, PORT_DNS), UDPHandler)
     except socket.error:
-        closer('ERROR: Could not start server, is another program on udp:53?')
+        closer('ERROR: Could not start server, is another program on udp:{}?'.format(PORT_DNS))
     except OSError:
-        print('ERROR: Could not start server, is another program on udp:53')
+        print('ERROR: Could not start server, is another program on udp:{}'.format(PORT_DNS))
         closer('    ^^This could also be a permission error^^')
 
     thread = threading.Thread(name='DNS_Server',
